@@ -1,77 +1,11 @@
 --Example 22 from "Numerical homotopies from Khovanskii bases"
 --Authors: Michael Burr, Frank Sottile, and Elise Walker
+
 restart;
-
---PACKAGES----------------------------------------------------------------------------
-needsPackage "SubalgebraBases" 
--- The "SubalgebraBases" package computes SAGBI bases and can be found at:
--- https://github.com/Macaulay2/M2/tree/master/M2/Macaulay2/packages/SubalgebraBases
---
-needsPackage "PHCpack"
--- The "PHCpack" package performs the polyhedral homotopy. Information available at:
--- https://faculty.math.illinois.edu/Macaulay2/doc/Macaulay2-1.15/share/doc/Macaulay2/PHCpack/html/
---
-needsPackage "Bertini"
--- The "Bertini" package performs user-defined homotopies. Information available at:
--- http://www2.macaulay2.com/Macaulay2/doc/Macaulay2-1.15/share/doc/Macaulay2/Bertini/html/index.html
---
-needsPackage "NumericalAlgebraicGeometry"
-setRandomSeed(0);
----------------------------------------------------------------------------------------
-
---PROCEDURES---------------------------------------------------------------------------
-makeCoef = (a, b) -> (
-    -- a and b are positive integers
-    -- returns one list of #a lists of length #b of random complex numbers
-    apply(a,(j->(apply(b, (i ->(x=random(sub(0,RR),sub(1,RR));cos(2*pi*x)+sin(2*pi*x)*ii))))))
-    )
-
-preservesOrder = (polynomialList, candidateWeight) -> (
-    -- polynomialList is a list of polynomials from the same ring 
-    -- candidateWeight is a row vector whose length = #generators of ring
-    -- returns TRUE if candidatesWeight is a total order on each polynomial in polynomialList
-    -- otherwise, returns FALSE
-    R := ring polynomialList#0;
-    weighted := for i in polynomialList list 
-                -candidateWeight*(transpose matrix exponents i);
-    flag := true;
-    for i in weighted do (
-      if rsort(i) != i  
-      then flag = false; 
-           break;
-      );
-    flag
-    )
-
-isIndependent = (binomialList) -> (
-    -- binomialList is a nonempty list of binomials from the same ring
-    -- returns true if the binomials generate the big torus and false otherwise
-    -- binomialList generates the big torus if its exponent matrix is full rank
-    binomialExponents := {};
-    for i in binomialList do (
-	ex := exponents i;
-    	newex := ex#0 - ex#1;
-    	binomialExponents = binomialExponents | {newex}; 
-	);
-    binomialExponents = transpose matrix binomialExponents;
-    rank binomialExponents  == numcols binomialExponents   
-    )
-
-isNonsingular = (polynomialList, toricSolutions) -> (
-    -- polynomialList is a nonempty list of binomials from the same ring
-    -- toricSolutions is a list of solutions to polynomialList
-    -- returns true if Jacobian(polynomialList) is full rank at each toricSolutions
-    R := CC[gens ring first polynomialList];
-    pList := for i in polynomialList list sub(i, R);
-    flag := true; --true if nonsingular
-    for i from 0 to #toricSolutions - 1 do(
-	JacobianStart := sub(jacobian ideal pList, matrix{toricSolutions#i});
-        if not isFullNumericalRank(JacobianStart)
-	    then (flag = false; break)   
-	);
-    flag  
-    )
----------------------------------------------------------------------------------------
+needs "Procedures.m2"; 
+--This file "Procedures.m2" does the following:
+---loads the packages: SubalgebraBases, PHCpack, Bertini, NumericalAlgebraicGeometry
+---defines procedures for several of the algorithm steps
 
 
 --PROBLEM STATEMENT--------------------------------------------------------------------
@@ -96,31 +30,25 @@ A = transpose matrix(vKB);
 
 -- Choose weight vector w preserving grevlex on Khovanskii basis KB
 w = matrix{{-6,-5,0}};
-preservesOrder(KB, w) --checks vector w preserves grevlex order on KB
+assert preservesOrder(KB, w) --checks vector w preserves grevlex order on KB
 
 -- Compute Groebner basis for ideal I_B
-wA = flatten entries (w * A)
+wA = flatten entries (w * A);
 presRing = QQ[a_1..a_#KB, MonomialOrder=>{Weights => -wA}]; 
 IB = trim ker map(RVs, presRing, KB);   --this is the ideal I_B
 Igens = flatten entries gens gb IB;     --this is the Groebner basis for I_B
 
 --Compute Toric Degeneration of using Igens with parameter t
 presRingt = QQ[gens presRing | {t}]
-f = {};
-for i from 0 to #Igens-1 do {
-  Bf = w * A * transpose matrix exponents Igens#i; 
-  wf = -min(flatten entries Bf); 
-  ex = for j in flatten entries Bf list j+wf ;
-  fterms = terms Igens#i;
-  f = append(f, sum apply(fterms, ex, (i,j)->sub(i,presRingt)*t^j));
-} --f is degeneration in weighted proj space 
+f = computeDegeneration(Igens, w*A, presRingt, t);
+--f is the degeneration in weight projective space
 
 --Verify toric degeneration (and, consequentially, Khovanskii basis)
 fzero = for i in f list sub(sub(i, t=>0), presRing); --defines special fiber
 tideal = trim ideal(fzero);
 LT = for i in KB list leadTerm(i);
 IA = ker map(RVs,presRing, LT); --defines toric variety from semigroup
-IA == tideal     --check same ideal
+assert (IA == tideal)     --check same ideal
 
 
 -- STEP(ii)----------------------------------------------------------------------------
@@ -139,13 +67,13 @@ Lambda = makeCoef(2, #projKodaira); --coefficients for general complementary sub
 pbToricSystem =  apply(2,(i-> sum(apply(projKodaira,Lambda#i,(j,k)->j*k)))); --pulledback system
 pbToricSolutions = solveSystem(pbToricSystem, Software=> PHCPACK);
 projToricSolutions = apply(#pbToricSolutions,i->apply(projKodaira, 
-	j->(if j == 1 then 1 else  sub(j,matrix{pbToricSolutions#i#Coordinates}))));
+       j->(if j == 1 then 1 else  sub(j,matrix{pbToricSolutions#i#Coordinates}))));
 --projToricSolutions are the starting points of the homotopy
 
 --Choose square subsystem which is  independent and nonsingular at t=0
 ind = {0, 3, 5, 6, 10}; --indices of f for candidate square subsystem
-isIndependent(fzero_ind)
-isNonsingular(fzero_ind, projToricSolutions)
+assert isIndependent(fzero_ind) 
+assert isNonsingular(fzero_ind, projToricSolutions)
 
 --Moving weighted degeneration to new ring for implementation in Bertini
 CCpresRingtu = CC[gens presRingt | {u}];
