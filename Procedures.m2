@@ -102,7 +102,7 @@ applyGammaTrick = (complexRing, polynomialList)-> (
     S := QQ[gens ring first polynomialList| {u}]; --temporary ring for gamma-sub.
     newHomotopy := for i in polynomialList list sub(i, S);
     newHomotopy = for i in newHomotopy list 
-        (u*t + 1-t)^degree(t,i)*sub(i, t=>u*t/(u*t + 1-t)); --polynomial over 1
+        ((u*t + 1-t)^(degree(t,i)))*sub(i, t=>u*t/(u*t + 1-t)); --polynomial over 1
     newHomotopy = for i in newHomotopy list numerator i;    --polynomial
     newHomotopy = for i in newHomotopy list sub(i, complexRing);
     use complexRing;
