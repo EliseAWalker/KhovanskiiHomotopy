@@ -1,6 +1,6 @@
 # KhovanskiiHomotopy
 # This repository contains Macaulay2 files for the examples appearing in "Numerical homotopies from Khovanskii bases"
-# The preprint of the paper will be available soon.
+# The preprint of the paper is available at: https://arxiv.org/pdf/2008.13055.pdf
 
 # Examples 10 and 17 are motivated by a Bott-Samelson variety example given in Dave Anderson's 2012 paper.
 # Example 23 involves the algebra of planar cubics through four fixed points. This example is motivated by and example of Duff, Hein, and Sottile's 2018 preprint.
