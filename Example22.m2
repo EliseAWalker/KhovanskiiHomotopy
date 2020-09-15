@@ -41,7 +41,7 @@ Igens = flatten entries gens gb IB;     --this is the Groebner basis for I_B
 --Compute Toric Degeneration of using Igens with parameter t
 presRingt = QQ[gens presRing | {t}]
 f = computeDegeneration(Igens, w*A, presRingt, t);
---f is the degeneration in weight projective space
+--f is the degeneration in weighted projective space
 
 --Verify toric degeneration (and, consequentially, Khovanskii basis)
 fzero = for i in f list sub(sub(i, t=>0), presRing); --defines special fiber
@@ -101,6 +101,8 @@ YinvLSolutions = bertiniUserHomotopy(
     u, {t=>u}, witnessHomotopy, projGeneralSolutions,  
     HomVariableGroup => drop(gens CCpresRingtu, -2));
 
+
+-- STEP(vi)-----------------------------------------------------------------------------
 --Compute (unique) points in X_1 \cap pr^(-1)(L) via projection pi
 XinvLSolutions = for i in YinvLSolutions list flatten append(drop(i#Coordinates, -2), {i#Coordinates#6^2, i#Coordinates#7^3});
 XinvLSolutions = sort(XinvLSolutions);
@@ -112,6 +114,6 @@ for i in XinvLSolutions do (
     );
 
 --Compute X_1 \cap L = varphi_V(X) \cap L
-XLSolutions = for i in uniqueXinvLSolutions list drop(i, -2);
+XLSolutions = for i in uniqueXinvLSolutions list drop(i, -2); --solutions of varphi_V(X) \cap L
 
 
