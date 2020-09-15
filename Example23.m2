@@ -1,4 +1,4 @@
---Example 22 from "Numerical homotopies from Khovanskii bases"
+--Example 23 from "Numerical homotopies from Khovanskii bases"
 --Authors: Michael Burr, Frank Sottile, and Elise Walker
 
 restart;
