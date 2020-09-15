@@ -12,22 +12,26 @@ setRandomSeed(9);
 --PROBLEM STATEMENT--------------------------------------------------------------------
 RVs = QQ[X,Y,Z,s,  MonomialOrder=>{Weights =>{1,1,1,0}, {0,0,1,0},{0,1,0,0},{1,0,0,0}}];
 basisV = {1*s, X*s, Y*s, Z*s, X*Z*s, Y*Z*s, X*(X*Z+Y)*s, Y*(X*Z+Y)*s};
--- GOAL: Compute all points in a linear section of varphi_V(X)
--- METHOD: Khovanskii homotopy algorithm (14) and Toric two-step homotopy algorithm (3)
+L = {{ 1,  1, 1,  1,  1,  1,  1,  1 },
+     { 1, -2, 3, -4,  5, -6,  7, -8 },
+     { 2,  3, 5,  7, 11, 13, 17, 19 }}; --coefficients of complementary linear subspace
+-- GOAL: Compute all points in varphi_V(X) \cap L
+-- METHOD: Khovanskii homotopy algorithm (14), which calls the toric two-step homotopy 
+--         algorithm (3)
 ---------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------
 
 
 ---------------------------------------------------------------------------------------
 --ALGORITHM 14------------------------------------------------------------------------- 
--- STEP (i) ---------------------------------------------------------------------------
+-- INPUT ---------------------------------------------------------------------------
 --Compute finite Khovanskii basis and valuation matrix A
 KB = basisV; -- finite Khovanskii basis computed by Anderson
 inKB = {1*s, X*s, Y*s, Z*s, X*Z*s, Y*Z*s, X*Y*s, Y*Y*s}; --initial algebra
 A = transpose matrix flatten for b in inKB list exponents b; 
 
 
--- STEPS (ii-iv) ----------------------------------------------------------------------
+-- STEPS (i-iii) ----------------------------------------------------------------------
 --Choose weight vector w so the w-minimal terms of KB correspond to inKB
 w = matrix{{1,1,1,-2}};
 assert preservesOrder(KB,w) -- checks w satisfies desired property
@@ -36,10 +40,10 @@ assert preservesOrder(KB,w) -- checks w satisfies desired property
 wA = flatten entries (w*A);
 presRing = QQ[x_0..x_(#KB -1), MonomialOrder=>{Weights=>-wA}]
 IB = ker map(RVs, presRing, KB); --ideal for phi_V(X)
-Igens = flatten entries gens gb IB; --these are generators for I_B
+Igens = flatten entries gens gb IB; --this is a Groebner basis for I_B
 
 
--- STEP (v) ---------------------------------------------------------------------------
+-- STEP (iv) --------------------------------------------------------------------------
 --Compute Toric Degeneration (G_t) of using Igens with parameter t
 presRingt = QQ[gens presRing | {t}]
 f = computeDegeneration(Igens, w*A, presRingt, t);
@@ -52,31 +56,30 @@ IA = ker map(RVs,presRing, inKB); --defines toric variety from semigroup
 assert (IA == tideal)     --check same ideal
 
 
--- STEP (vi) -------------------------------------------------------------------------
+-- STEP (v) -------------------------------------------------------------------------
 --Construct Kodaira map for toric variety at t=0
 CCRV = CC[drop(gens RVs, -1)]; --polymomial ring of x,y,z over CC
 projKodaira = for i in inKB list sub( sub(i, s=>1), CCRV);
 
 
--- STEP (vii) ------------------------------------------------------------------------
--- Coefficients of general linear subspace of complementary dimension
-L = {{ 1,  1, 1,  1,  1,  1,  1,  1 },
-     { 1, -2, 3, -4,  5, -6,  7, -8 },
-     { 2,  3, 5,  7, 11, 13, 17, 19 }};
-eqL = apply(#L,(i-> sum(apply(gens presRing, L#i,(j,k)->j*k))));
+-- STEP (vi) ------------------------------------------------------------------------
+-- Applying Algorithm 3
 
 
 
 ---------------------------------------------------------------------------------------
 --ALGORITHM 3--------------------------------------------------------------------------
+eqL = apply(#L,(i-> sum(apply(gens presRing, L#i,(j,k)->j*k)))); --equations defining L
 -- STEP (i) ---------------------------------------------------------------------------
 -- Compute pull back of toric system and L
 pbToricSystem = apply(#L,(i-> sum(apply(projKodaira, L#i,(j,k)->j*k))));
 
 -- STEP (ii) --------------------------------------------------------------------------
+-- Solve pulled back system using the polyhedral homotopy
 pbToricSolutions = solveSystem(pbToricSystem, Software=> PHCPACK);
 
 -- STEP (iii) -------------------------------------------------------------------------
+-- Push forward pulled back solutions
 projToricSolutions = apply(#pbToricSolutions,i->apply(projKodaira, 
       j->(if j == 1 then 1 else  sub(j,matrix{pbToricSolutions#i#Coordinates}))));
 
