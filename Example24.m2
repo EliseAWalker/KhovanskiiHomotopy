@@ -1,4 +1,4 @@
---Example 23 from "Numerical homotopies from Khovanskii bases"
+--Example 24 from "Numerical homotopies from Khovanskii bases"
 --Authors: Michael Burr, Frank Sottile, and Elise Walker
 
 restart;
@@ -24,7 +24,7 @@ L = makeCoef(#gens RVs - 1, #basisV); --coefficients of complementary linear sub
 
 -- STEP(i) ----------------------------------------------------------------------------
 -- Compute finite Khovanskii basis and valuation matrix A
-KB = flatten entries sagbi(matrix {basisV}); -- Khovanskii basis
+KB = flatten entries subalgebraBasis(basisV); -- Khovanskii basis
 vKB = flatten for i in KB list exponents leadTerm(i); --valuations of KB
 A = transpose matrix(vKB); 
 
